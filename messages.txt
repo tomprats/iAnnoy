@@ -1,0 +1,5 @@
+https://github.com/woofound/core-api/pull/60
+https://github.com/woofound/careers/pull/292
+https://github.com/woofound/core-api/pull/58
+https://github.com/woofound/careers/pull/291
+https://github.com/woofound/awe/pull/2
