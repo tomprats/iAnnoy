@@ -4,7 +4,14 @@ require 'pry'
 
 class Spam
   def initialize(options = {})
-    @debug = options[:debug] || false
+    @debug = options[:debug]
+    @debug = false if @debug.nil?
+
+    @pretty = options[:pretty]
+    @pretty = true if @pretty.nil?
+
+    @color = options[:color]
+    @color = "random" if @color.nil?
 
     @contributers = [
       Hashie::Mash.new(:name => "Tom",    :github => "tomprats",     :hipchat => "TomPrats"),
@@ -13,6 +20,7 @@ class Spam
       Hashie::Mash.new(:name => "Carson", :github => "carsonwright", :hipchat => "CarsonWright"),
       Hashie::Mash.new(:name => "Sam",    :github => "sam199006",    :hipchat => "iSamBoyd")
     ]
+
     git_token = File.open('github.token', &:readline).strip
     hip_token = File.open('hipchat.token', &:readline).strip
     @github = Github.new(oauth_token: git_token)
@@ -36,43 +44,24 @@ class Spam
 
     pulls = pulls.collect { |p| p unless p.body.empty? }.flatten.compact
     pulls.each do |pull|
-      comments = @github.pull_requests.comments.list(
-        user: "woofound",
-        repo: pull.head.repo.name,
-        rMaequest_id: pull.number
-      ).flatten.compact
-
-      comments += @github.issues.comments.list(
-        user: "woofound",
-        repo: pull.head.repo.name,
-        issue_id: pull.number
-      ).flatten.compact
-
-      commits = @github.pull_requests.commits(
-        user: "woofound",
-        repo: pull.head.repo.name,
-        number: pull.number
-      ).flatten.compact
-
-
-      message_all(pull) unless activity?(comments, commits)
-      @contributers.each do |contributer|
-        message(contributer, pull) unless thumbs?(contributer, comments, pull)
-      end
+      check_pull(pull)
     end
   end
 
   private
-  # Send a hipchat to the main room
-  def message_all(pull)
-    message = "@all: #{pull.html_url}"
-    puts "Spamming #{message}"
-    unless @debug
-      @hipchat['Development'].send('GitCheck', message, :color => 'random', :notify => true)
+  # Return users who haven't checked this pull request
+  def check_thumbs(comments, pull)
+    lazy = []
+    @contributers.each do |contributer|
+      unless thumbs?(contributer, comments, pull)
+        lazy.push("@#{contributer.hipchat}")
+      end
     end
+
+    lazy
   end
 
-  # If contributer has thumbsed it up
+  # Return if contributer has thumbsed it up
   # Creator defaults to true
   def thumbs?(contributer, comments, pull)
     return true if contributer.github == pull.user.login
@@ -81,7 +70,7 @@ class Spam
     comments.collect { |c| c.body.include? ":+1:" }.any?
   end
 
-  # If someone has commented since last commit
+  # Return if someone has commented since last commit
   # Excludes creator
   def activity?(comments, commits)
     return false if comments.empty?
@@ -91,11 +80,65 @@ class Spam
   end
 
   # Send a hipchat to contributer with pull_request
-  def message(contributer, pull)
-    message = "@#{contributer.hipchat}: #{pull.html_url}"
+  def message(reciever, pull)
+    message = "#{reciever}: #{pull.html_url}"
+    send_hipchat(message)
+  end
+
+  def send_hipchat(message)
     puts "Spamming #{message}"
     unless @debug
-      @hipchat['Development'].send('GitCheck', message, :color => 'random', :notify => true)
+      @hipchat['Development'].send('GitCheck', message, :color => @color, :notify => true)
     end
+  end
+
+  def output_results(lazy, pull)
+    if @pretty
+      message = "#{pull.html_url} needs #{lazy.join(' ')}"
+      send_hipchat(message)
+    else
+      lazy.each do |bum|
+        message(bum, pull)
+      end
+    end
+  end
+
+  # Checks pull for necessary comments
+  def check_pull(pull)
+    comments = get_comments(pull) + get_issue_comments(pull)
+    commits = get_commits(pull)
+
+    message("@all", pull) unless activity?(comments, commits) || @pretty
+
+    lazy = check_thumbs(comments, pull)
+
+    unless lazy.empty?
+      output_results(lazy, pull)
+    end
+  end
+
+  # Github pull request relations
+  def get_comments(pull)
+    @github.pull_requests.comments.list(
+      user: "woofound",
+      repo: pull.head.repo.name,
+      rMaequest_id: pull.number
+    ).flatten.compact
+  end
+
+  def get_issue_comments(pull)
+    @github.issues.comments.list(
+        user: "woofound",
+        repo: pull.head.repo.name,
+        issue_id: pull.number
+      ).flatten.compact
+  end
+
+  def get_commits(pull)
+    @github.pull_requests.commits(
+      user: "woofound",
+      repo: pull.head.repo.name,
+      number: pull.number
+    ).flatten.compact
   end
 end
