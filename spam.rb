@@ -3,7 +3,9 @@ require 'github_api'
 require 'pry'
 
 class Spam
-  def initialize
+  def initialize(options = {})
+    @debug = options[:debug] || false
+
     @contributers = [
       Hashie::Mash.new(:name => "Tom",    :github => "tomprats",     :hipchat => "TomPrats"),
       Hashie::Mash.new(:name => "Jason",  :github => "jasontruluck", :hipchat => "JasonTruluck"),
@@ -65,7 +67,9 @@ class Spam
   def message_all(pull)
     message = "@all: #{pull.html_url}"
     puts "Spamming #{message}"
-    @hipchat['Development'].send('GitCheck', message, :color => 'random', :notify => true)
+    unless @debug
+      @hipchat['Development'].send('GitCheck', message, :color => 'random', :notify => true)
+    end
   end
 
   # If contributer has thumbsed it up
@@ -90,6 +94,8 @@ class Spam
   def message(contributer, pull)
     message = "@#{contributer.hipchat}: #{pull.html_url}"
     puts "Spamming #{message}"
-    @hipchat['Development'].send('GitCheck', message, :color => 'random', :notify => true)
+    unless @debug
+      @hipchat['Development'].send('GitCheck', message, :color => 'random', :notify => true)
+    end
   end
 end
