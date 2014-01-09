@@ -17,11 +17,11 @@ class Spam
     @name = "GitCheck" if @name.nil?
 
     @contributers = [
-      Hashie::Mash.new(name: "Tom",    github: "tomprats",     hipchat: "TomPrats"),
-      Hashie::Mash.new(name: "Jason",  github: "jasontruluck", hipchat: "JasonTruluck"),
-      Hashie::Mash.new(name: "Chris",  github: "cpreisinger",  hipchat: "ChrisPreisinger"),
-      Hashie::Mash.new(name: "Carson", github: "carsonwright", hipchat: "CarsonWright"),
-      Hashie::Mash.new(name: "Sam",    github: "sam199006",    hipchat: "SamBoyd")
+      Hashie::Mash.new(missed: 0, name: "Tom",    github: "tomprats",     hipchat: "TomPrats"),
+      Hashie::Mash.new(missed: 0, name: "Jason",  github: "jasontruluck", hipchat: "JasonTruluck"),
+      Hashie::Mash.new(missed: 0, name: "Chris",  github: "cpreisinger",  hipchat: "ChrisPreisinger"),
+      Hashie::Mash.new(missed: 0, name: "Carson", github: "carsonwright", hipchat: "CarsonWright"),
+      Hashie::Mash.new(missed: 0, name: "Sam",    github: "sam199006",    hipchat: "SamBoyd")
     ]
 
     git_token = File.open('github.token', &:readline).strip
@@ -49,6 +49,8 @@ class Spam
     pulls.each do |pull|
       check_pull(pull)
     end
+
+    spam_laziest
   end
 
   private
@@ -58,6 +60,7 @@ class Spam
     @contributers.each do |contributer|
       unless thumbs?(contributer, comments, pull)
         lazy.push("@#{contributer.hipchat}")
+        contributer.missed += 1
       end
     end
 
@@ -104,6 +107,12 @@ class Spam
         message(bum, pull)
       end
     end
+  end
+
+  def spam_laziest
+    laziest = @contributers.max_by(&:missed)
+    message = "@#{laziest.hipchat} you are the laziest of them all"
+    send_hipchat(message)
   end
 
   # Checks pull for necessary comments
