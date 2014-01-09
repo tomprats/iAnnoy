@@ -13,12 +13,15 @@ class Spam
     @color = options[:color]
     @color = "random" if @color.nil?
 
+    @name = options[:name]
+    @name = "GitCheck" if @name.nil?
+
     @contributers = [
-      Hashie::Mash.new(:name => "Tom",    :github => "tomprats",     :hipchat => "TomPrats"),
-      Hashie::Mash.new(:name => "Jason",  :github => "jasontruluck", :hipchat => "JasonTruluck"),
-      Hashie::Mash.new(:name => "Chris",  :github => "cpreisinger",  :hipchat => "ChrisPreisinger"),
-      Hashie::Mash.new(:name => "Carson", :github => "carsonwright", :hipchat => "CarsonWright"),
-      Hashie::Mash.new(:name => "Sam",    :github => "sam199006",    :hipchat => "iSamBoyd")
+      Hashie::Mash.new(name: "Tom",    github: "tomprats",     hipchat: "TomPrats"),
+      Hashie::Mash.new(name: "Jason",  github: "jasontruluck", hipchat: "JasonTruluck"),
+      Hashie::Mash.new(name: "Chris",  github: "cpreisinger",  hipchat: "ChrisPreisinger"),
+      Hashie::Mash.new(name: "Carson", github: "carsonwright", hipchat: "CarsonWright"),
+      Hashie::Mash.new(name: "Sam",    github: "sam199006",    hipchat: "SamBoyd")
     ]
 
     git_token = File.open('github.token', &:readline).strip
@@ -31,7 +34,7 @@ class Spam
     hour = Time.now.hour
     day = Time.now.wday
 
-    hour > 11 && hour < 19 && day != 0 && day != 6
+    hour >= 11 && hour <= 19 && day != 0 && day != 6
   end
 
   def execute!
@@ -88,7 +91,7 @@ class Spam
   def send_hipchat(message)
     puts "Spamming #{message}"
     unless @debug
-      @hipchat['Development'].send('GitCheck', message, :color => @color, :notify => true)
+      @hipchat['Development'].send(@name, message, :color => @color, :notify => true)
     end
   end
 
