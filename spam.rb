@@ -10,24 +10,29 @@ class Spam
     @pretty = options[:pretty]
     @pretty = true if @pretty.nil?
 
-    @color = options[:color]
-    @color = "random" if @color.nil?
-
     @name = options[:name]
     @name = "GitCheck" if @name.nil?
 
-    @contributers = [
-      Hashie::Mash.new(missed: 0, name: "Tom",    github: "tomprats",     hipchat: "TomPrats"),
-      Hashie::Mash.new(missed: 0, name: "Jason",  github: "jasontruluck", hipchat: "JasonTruluck"),
-      Hashie::Mash.new(missed: 0, name: "Chris",  github: "cpreisinger",  hipchat: "ChrisPreisinger"),
-      Hashie::Mash.new(missed: 0, name: "Carson", github: "carsonwright", hipchat: "CarsonWright"),
-      Hashie::Mash.new(missed: 0, name: "Sam",    github: "sam199006",    hipchat: "SamBoyd")
-    ]
+    @color = options[:color]
+    @color = "random" if @color.nil?
 
-    git_token = File.open('github.token', &:readline).strip
-    hip_token = File.open('hipchat.token', &:readline).strip
-    @github = Github.new(oauth_token: git_token)
-    @hipchat = HipChat::Client.new(hip_token)
+    @file = options[:file]
+    @file = "organization.json" if @file.nil?
+
+    json = JSON.parse(File.read(@file))
+    hashie = Hashie::Mash.new(json)
+    hashie.contributers.each do |contributer|
+      contributer.merge!(:missed => 0)
+    end
+
+    @organization = hashie.organization
+    @contributers = hashie.contributers
+    @github = Github.new(oauth_token: hashie.github_token)
+    @hipchat = HipChat::Client.new(hashie.hipchat_token)
+
+    if @debug
+      puts "Note: Name (#{@name}) and Color (#{@color}) not used in debug mode"
+    end
   end
 
   def time?

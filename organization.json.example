@@ -1,0 +1,8 @@
+{
+  "organization": "tomprats",
+  "github_token": "accessTokenFromGithub",
+  "hipchat_token": "adminTokenFromHipchat",
+  "contributers": [
+    { "name": "Tom", "github": "tomprats", "hipchat": "TomPrats" }
+  ]
+}
